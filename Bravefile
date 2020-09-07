@@ -1,0 +1,75 @@
+base:
+  image: ubuntu/bionic
+  location: public
+
+packages:
+  manager: apt
+  system:
+    - snapd
+    - git
+    - htop
+    - openssh-server
+    - mc
+
+copy:
+  - source: go-build-server
+    target: /home/ubuntu/go-build-server
+
+  - source: bravetools_rsa.pub
+    target: /home/ubuntu/
+
+run:
+  - command: snap
+    args:
+      - install
+      - go
+      - -classic
+
+  - command: mkdir
+    args:
+      - /home/ubuntu/.ssh
+
+  - command: mkdir
+    args:
+      - -p
+      - /home/ubuntu/builds
+
+  - command: mkdir
+    args:
+      - -p
+      - /home/ubuntu/workspace/src/github.com/beringresearch/go-build-server/
+
+  - command: bash
+    args: 
+      - -c
+    content: |-
+      cp -a /home/ubuntu/go-build-server/. /home/ubuntu/workspace/src/github.com/beringresearch/go-build-server/
+
+  - command: bash
+    args: 
+      - -c
+    content: |-
+      cp /home/ubuntu/bravetools_rsa.pub /home/ubuntu/.ssh/authorized_keys
+
+  - command: bash
+    args:
+      - -c
+    content: |-
+      echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+
+  - command: chown
+    args:
+      - -R
+      - ubuntu:ubuntu
+      - /home/ubuntu/
+
+service:
+  image: go-build-1.0
+  name: go-build
+  version: 1.0
+  ip: 10.0.0.10
+  ports:
+    - 22:8222
+  resources:
+    ram: 4GB
+    cpu: 2
